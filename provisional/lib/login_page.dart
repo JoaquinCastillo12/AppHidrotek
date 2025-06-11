@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart'; // UI de Flutter
-import 'package:http/http.dart' as http; // Para peticiones HTTP
-import 'dart:convert'; // Para usar json.encode y json.decode
+import 'package:flutter/material.dart'; 
+import 'package:http/http.dart' as http; 
+import 'dart:convert'; 
 
 
 class LoginPage extends StatefulWidget {

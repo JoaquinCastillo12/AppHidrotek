@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
-import 'producto_form.dart'; // Importa tu formulario si quieres editar
+import 'producto_form.dart'; 
 
 class ProductosList extends StatefulWidget {
   final String token;
