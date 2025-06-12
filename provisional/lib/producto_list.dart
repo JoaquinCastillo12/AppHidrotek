@@ -72,29 +72,93 @@ class _ProductosListState extends State<ProductosList> {
       body: cargando
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-        onRefresh: cargarProductos,
-        child: ListView.builder(
-          itemCount: productos.length,
-          itemBuilder: (context, index) {
-            final producto = productos[index];
-            final imagenUrl = producto['imagen'] ?? '';
+              onRefresh: cargarProductos,
+              child: ListView.builder(
+                itemCount: productos.length,
+                itemBuilder: (context, index) {
+                  final producto = productos[index];
+                  final imagenUrl = producto['imagen'] ?? '';
 
-            return ListTile(
-              leading: imagenUrl.isNotEmpty
-                  ? Image.network(imagenUrl, width: 50, height: 50, fit: BoxFit.cover)
-                  : Container(
-                width: 50,
-                height: 50,
-                color: Colors.grey.shade300,
-                child: const Icon(Icons.image_not_supported),
+                  return Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    elevation: 4,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: (imagenUrl != null && imagenUrl.toString().isNotEmpty && Uri.tryParse(imagenUrl)?.hasAbsolutePath == true)
+                                    ? Image.network(
+                                        imagenUrl,
+                                        width: double.infinity,
+                                        height: 180,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => Container(
+                                          width: double.infinity,
+                                          height: 180,
+                                          color: Colors.grey.shade300,
+                                          child: const Icon(Icons.image_not_supported, size: 60),
+                                        ),
+                                      )
+                                    : Container(
+                                        width: double.infinity,
+                                        height: 180,
+                                        color: Colors.grey.shade300,
+                                        child: const Icon(Icons.image_not_supported, size: 60),
+                                      ),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, color: Colors.white),
+                                      tooltip: 'Editar',
+                                      onPressed: () => abrirFormulario(producto['id']),
+                                      style: IconButton.styleFrom(
+                                        backgroundColor: Colors.blueAccent.withOpacity(0.8),
+                                        shape: const CircleBorder(),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.white),
+                                      tooltip: 'Borrar',
+                                      onPressed: () {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('La opción de borrar no está habilitada.')),
+                                        );
+                                      },
+                                      style: IconButton.styleFrom(
+                                        backgroundColor: Colors.redAccent.withOpacity(0.8),
+                                        shape: const CircleBorder(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            producto['nombre'] ?? 'Sin nombre',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                          ),
+                          const SizedBox(height: 4),
+                          Text('Precio: \$${producto['precio'].toString()}'),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
-              title: Text(producto['nombre'] ?? 'Sin nombre'),
-              subtitle: Text('Precio: \$${producto['precio'].toString()}'),
-              onTap: () => abrirFormulario(producto['id']),
-            );
-          },
-        ),
-      ),
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => abrirFormulario(null),
         backgroundColor: azul,
@@ -102,5 +166,23 @@ class _ProductosListState extends State<ProductosList> {
         tooltip: 'Crear producto',
       ),
     );
+  }
+
+  // Agrega esta función al final de tu clase:
+  Future<void> borrarProducto(int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/productos/$id/'),
+      headers: {'Authorization': 'Bearer ${widget.token}'},
+    );
+    if (response.statusCode == 204) {
+      cargarProductos();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Producto borrado')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al borrar producto')),
+      );
+    }
   }
 }

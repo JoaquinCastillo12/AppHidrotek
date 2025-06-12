@@ -44,9 +44,48 @@ class _MensajesPageState extends State<MensajesPage> {
         itemCount: mensajes.length,
         itemBuilder: (context, index) {
           final mensaje = mensajes[index];
-          return ListTile(
-            title: Text(mensaje['nombre']),
-            subtitle: Text(mensaje['mensaje']),
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            elevation: 3,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.person, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${mensaje['nombre'] ?? ''} ${mensaje['apellido'] ?? ''}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.email, color: Colors.green),
+                      const SizedBox(width: 8),
+                      Text(mensaje['email'] ?? '', style: const TextStyle(fontSize: 15)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.phone, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Text(mensaje['telefono'] ?? '', style: const TextStyle(fontSize: 15)),
+                    ],
+                  ),
+                  const Divider(height: 24),
+                  Text(
+                    mensaje['mensaje'] ?? '',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
           );
         },
       ),

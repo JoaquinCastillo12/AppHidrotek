@@ -199,30 +199,23 @@ class _CalculadoraCabezaPageState extends State<CalculadoraCabezaPage> {
 }
 
  List<String> _recomendarBombas(double caudal, double cdt) {
-  double maximoAltura = cdt + 10;
+  double maximoAltura = cdt + 5;
   double minimoAltura = cdt;
-  double margenCaudal = caudal * 0.10; // 10% de margen
+  double margenCaudal = caudal * 0.25; // 10% de margen
   List<String> opciones = [];
 
   for (var entry in curvas.entries) {
     String nombre = entry.key;
     Map<double, double> datos = entry.value;
 
-    // Filtrar solo puntos con caudal > 0
-    final puntosValidos = datos.entries.where((p) => p.key > 0).toList();
-    if (puntosValidos.isEmpty) continue;
-
-    // Buscar el punto con caudal más cercano al solicitado (solo entre los > 0)
-    var puntoMasCercano = puntosValidos.reduce(
-      (a, b) => (a.key - caudal).abs() < (b.key - caudal).abs() ? a : b
-    );
-
-    // Solo aceptar si la altura está dentro del rango permitido
-    // y el caudal más cercano está dentro del margen permitido
-    if ((puntoMasCercano.key - caudal).abs() <= margenCaudal &&
-        puntoMasCercano.value >= minimoAltura &&
-        puntoMasCercano.value <= maximoAltura) {
-      opciones.add('$nombre (${puntoMasCercano.key} GPM, ${puntoMasCercano.value} m)');
+    for (var punto in datos.entries) {
+      if (punto.key > 0 &&
+          (punto.key >= caudal - margenCaudal && punto.key <= caudal + margenCaudal) &&
+          punto.value >= minimoAltura &&
+          punto.value <= maximoAltura) {
+        opciones.add('$nombre (${punto.key} GPM, ${punto.value} m)');
+        break; // Solo una vez por bomba
+      }
     }
   }
   return opciones;
