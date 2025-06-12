@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 class MensajesPage extends StatefulWidget {
   final String token;
@@ -36,6 +37,23 @@ class _MensajesPageState extends State<MensajesPage> {
     }
   }
 
+  void _abrirWhatsApp(String numero) async {
+    final uri = Uri.parse('https://wa.me/$numero');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _enviarCorreo(String correo) async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: correo,
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,21 +81,43 @@ class _MensajesPageState extends State<MensajesPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.email, color: Colors.green),
-                      const SizedBox(width: 8),
-                      Text(mensaje['email'] ?? '', style: const TextStyle(fontSize: 15)),
-                    ],
-                  ),
+                  if (mensaje['email'] != null && mensaje['email'].toString().isNotEmpty)
+                    Row(
+                      children: [
+                        const Icon(Icons.email, color: Colors.green),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => _enviarCorreo(mensaje['email']),
+                          child: Text(
+                            mensaje['email'],
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.phone, color: Colors.orange),
-                      const SizedBox(width: 8),
-                      Text(mensaje['telefono'] ?? '', style: const TextStyle(fontSize: 15)),
-                    ],
-                  ),
+                  if (mensaje['telefono'] != null && mensaje['telefono'].toString().isNotEmpty)
+                    Row(
+                      children: [
+                        const Icon(Icons.phone, color: Colors.orange),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => _abrirWhatsApp(mensaje['telefono'].toString().replaceAll(RegExp(r'\D'), '')),
+                          child: Text(
+                            mensaje['telefono'],
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Colors.green,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   const Divider(height: 24),
                   Text(
                     mensaje['mensaje'] ?? '',
