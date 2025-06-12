@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 class MensajesPage extends StatefulWidget {
   final String token;
@@ -36,6 +37,23 @@ class _MensajesPageState extends State<MensajesPage> {
     }
   }
 
+  void _abrirWhatsApp(String numero) async {
+    final uri = Uri.parse('https://wa.me/$numero');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _enviarCorreo(String correo) async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: correo,
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,7 +64,28 @@ class _MensajesPageState extends State<MensajesPage> {
           final mensaje = mensajes[index];
           return ListTile(
             title: Text(mensaje['nombre']),
-            subtitle: Text(mensaje['mensaje']),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(mensaje['mensaje']),
+                if (mensaje['telefono'] != null && mensaje['telefono'].toString().isNotEmpty)
+                  GestureDetector(
+                    onTap: () => _abrirWhatsApp(mensaje['telefono'].toString().replaceAll(RegExp(r'\D'), '')),
+                    child: Text(
+                      mensaje['telefono'],
+                      style: const TextStyle(color: Colors.green, decoration: TextDecoration.underline),
+                    ),
+                  ),
+                if (mensaje['correo'] != null && mensaje['correo'].toString().isNotEmpty)
+                  GestureDetector(
+                    onTap: () => _enviarCorreo(mensaje['correo']),
+                    child: Text(
+                      mensaje['correo'],
+                      style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                    ),
+                  ),
+              ],
+            ),
           );
         },
       ),
