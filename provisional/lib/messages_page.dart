@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:android_intent_plus/flag.dart';
+import 'dart:io' show Platform;
 
 class MensajesPage extends StatefulWidget {
   final String token;
@@ -14,6 +17,8 @@ class MensajesPage extends StatefulWidget {
 
 class _MensajesPageState extends State<MensajesPage> {
   List mensajes = [];
+  List leidos = [];
+  List noLeidos = [];
 
   @override
   void initState() {
@@ -29,22 +34,54 @@ class _MensajesPageState extends State<MensajesPage> {
     );
 
     if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
       setState(() {
-        mensajes = jsonDecode(response.body);
+        mensajes = data;
+        // Si tu backend tiene un campo 'leido', úsalo aquí:
+        leidos = mensajes.where((m) => m['leido'] == true).toList();
+        noLeidos = mensajes.where((m) => m['leido'] != true).toList();
       });
     } else {
       print('Error al cargar los mensajes: ${response.statusCode}');
     }
   }
 
+  void marcarComoLeido(int index) {
+    setState(() {
+      final mensaje = noLeidos.removeAt(index);
+      mensaje['leido'] = true;
+      leidos.insert(0, mensaje);
+    });
+  }
+
   void _abrirWhatsApp(String numero) async {
-    final uri = Uri.parse('https://wa.me/$numero');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final numeroLimpio = numero.replaceAll(RegExp(r'\D'), '');
+    final mensaje = ""; // Puedes personalizar el mensaje si quieres
+    if (Platform.isAndroid) {
+      final intent = AndroidIntent(
+        action: 'action_view',
+        data: 'https://wa.me/$numeroLimpio?text=$mensaje',
+        package: 'com.whatsapp',
+        flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+      );
+      await intent.launch();
+    } else {
+      final uri = Uri.parse('https://wa.me/$numeroLimpio?text=$mensaje');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
     }
   }
 
   void _enviarCorreo(String correo) async {
+  if (Platform.isAndroid) {
+    final intent = AndroidIntent(
+      action: 'action_view', // <-- Cambia aquí
+      data: 'mailto:$correo',
+      flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+    );
+    await intent.launch();
+  } else {
     final uri = Uri(
       scheme: 'mailto',
       path: correo,
@@ -53,81 +90,122 @@ class _MensajesPageState extends State<MensajesPage> {
       await launchUrl(uri);
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Mensajes')),
-      body: ListView.builder(
-        itemCount: mensajes.length,
-        itemBuilder: (context, index) {
-          final mensaje = mensajes[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            elevation: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.person, color: Colors.blue),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${mensaje['nombre'] ?? ''} ${mensaje['apellido'] ?? ''}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ],
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text('No leídos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: noLeidos.length,
+              itemBuilder: (context, index) {
+                final mensaje = noLeidos[index];
+                return Dismissible(
+                  key: Key(mensaje['id'].toString()),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    color: Colors.green,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: const Icon(Icons.check, color: Colors.white),
                   ),
-                  const SizedBox(height: 8),
-                  if (mensaje['email'] != null && mensaje['email'].toString().isNotEmpty)
-                    Row(
-                      children: [
-                        const Icon(Icons.email, color: Colors.green),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => _enviarCorreo(mensaje['email']),
-                          child: Text(
-                            mensaje['email'],
-                            style: const TextStyle(
-                              fontSize: 15,
-                              color: Colors.blue,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ],
+                  onDismissed: (direction) {
+                    marcarComoLeido(index);
+                  },
+                  child: _buildMensajeCard(mensaje),
+                );
+              },
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text('Leídos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: leidos.length,
+              itemBuilder: (context, index) {
+                final mensaje = leidos[index];
+                return _buildMensajeCard(mensaje);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMensajeCard(dynamic mensaje) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.person, color: Colors.blue),
+                const SizedBox(width: 8),
+                Text(
+                  '${mensaje['nombre'] ?? ''} ${mensaje['apellido'] ?? ''}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (mensaje['email'] != null && mensaje['email'].toString().isNotEmpty)
+              Row(
+                children: [
+                  const Icon(Icons.email, color: Colors.green),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _enviarCorreo(mensaje['email']),
+                    child: Text(
+                      mensaje['email'],
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.blue,
+                        decoration: TextDecoration.underline,
+                      ),
                     ),
-                  const SizedBox(height: 8),
-                  if (mensaje['telefono'] != null && mensaje['telefono'].toString().isNotEmpty)
-                    Row(
-                      children: [
-                        const Icon(Icons.phone, color: Colors.orange),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => _abrirWhatsApp(mensaje['telefono'].toString().replaceAll(RegExp(r'\D'), '')),
-                          child: Text(
-                            mensaje['telefono'],
-                            style: const TextStyle(
-                              fontSize: 15,
-                              color: Colors.green,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  const Divider(height: 24),
-                  Text(
-                    mensaje['mensaje'] ?? '',
-                    style: const TextStyle(fontSize: 16),
                   ),
                 ],
               ),
+            const SizedBox(height: 8),
+            if (mensaje['telefono'] != null && mensaje['telefono'].toString().isNotEmpty)
+              Row(
+                children: [
+                  const Icon(Icons.phone, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _abrirWhatsApp(mensaje['telefono'].toString()),
+                    child: Text(
+                      mensaje['telefono'],
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.green,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            const Divider(height: 24),
+            Text(
+              mensaje['mensaje'] ?? '',
+              style: const TextStyle(fontSize: 16),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
