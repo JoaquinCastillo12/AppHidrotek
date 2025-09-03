@@ -27,7 +27,7 @@ class _MensajesPageState extends State<MensajesPage> {
   }
 
   Future<void> fetchMensajes() async {
-    final url = Uri.parse('https://hidrotek.onrender.com/api/contact-messages/');
+    final url = Uri.parse('https://apigo.online/api/contact-messages/');
     final response = await http.get(
       url,
       headers: {'Authorization': 'Bearer ${widget.token}'},

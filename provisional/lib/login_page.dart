@@ -20,7 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _login() async {
     setState(() => _loading = true);
     final response = await http.post(
-      Uri.parse('https://hidrotek.onrender.com/api/login/'),
+      Uri.parse('https://apigo.online/api/login/'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         'username': _usernameController.text,

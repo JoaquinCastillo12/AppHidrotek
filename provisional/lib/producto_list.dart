@@ -12,7 +12,7 @@ class ProductosList extends StatefulWidget {
 }
 
 class _ProductosListState extends State<ProductosList> {
-  final String baseUrl = 'https://hidrotek.onrender.com/api';
+  final String baseUrl = 'https://apigo.online/api';
   List<dynamic> productos = [];
   bool cargando = true;
 

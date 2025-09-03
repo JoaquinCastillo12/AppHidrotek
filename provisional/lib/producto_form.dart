@@ -21,7 +21,7 @@ class _ProductoFormState extends State<ProductoForm> {
   final _precioController = TextEditingController();
   final _stockController = TextEditingController();
 
-  final String baseUrl = 'https://hidrotek.onrender.com/api';
+  final String baseUrl = 'https://apigo.online/api';
 
   List<dynamic> _categorias = [];
   List<dynamic> _marcas = [];
